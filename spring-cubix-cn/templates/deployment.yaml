@@ -9,6 +9,7 @@ spec:
   selector:
     matchLabels:
       {{- include "spring-cubix-cn.selectorLabels" . | nindent 6 }}
+
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -17,51 +18,111 @@ spec:
       {{- end }}
       labels:
         {{- include "spring-cubix-cn.selectorLabels" . | nindent 8 }}
+
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
       serviceAccountName: {{ include "spring-cubix-cn.serviceAccountName" . }}
+
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
       containers:
         - name: {{ .Release.Name }}
+
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+
           image: "{{ required "Image must be set in Values" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
           env:
-          - name: JAVA_OPTS
-            value: {{ .Values.javaOpts | quote }}
-          {{- range .Values.env }}
-          - name: {{ .name }}
-            value: {{ .value | quote }}
-          {{- end }}
-          - name: SPRING_PROFILES_ACTIVE
-            value: "{{ required "Logging mode must be set in Values (loggingMode), one of: stdout, stdout-json, file, file-json" .Values.loggingMode }}"
-          - name: SERVER_PORT
-            value: "8080"
-          - name: MANAGEMENT_SERVER_PORT
-            value: "8081"
+            - name: JAVA_OPTS
+              value: {{ .Values.javaOpts | quote }}
+
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+
+            - name: SPRING_CONFIG_IMPORT
+              value: "/config/application.properties"
+
+            - name: TARGET_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cnsecret
+                  key: apikey
+
+            - name: SPRING_PROFILES_ACTIVE
+              value: "{{ required "Logging mode must be set in Values (loggingMode), one of: stdout, stdout-json, file, file-json" .Values.loggingMode }}"
+
+            - name: SERVER_PORT
+              value: "8080"
+
+            - name: MANAGEMENT_SERVER_PORT
+              value: "8081"
+
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
+
             - name: management
               containerPort: 8081
               protocol: TCP
+
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            periodSeconds: 1
+            failureThreshold: 30
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            periodSeconds: 10
+            failureThreshold: 2
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
+            periodSeconds: 5
+            failureThreshold: 1
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "spring-cubix-cn.fullname" . }}-config
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
       {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+
