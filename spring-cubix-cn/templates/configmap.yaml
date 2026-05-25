@@ -9,3 +9,6 @@ data:
     spring.main.banner-mode=off
     target.api.url=http://appb:8080
     spring.application.name=appa
+    management.tracing.enabled=true
+    management.tracing.sampling.probability=1.0
+    management.otlp.tracing.endpoint=http://tempo.monitoring.svc.cluster.local:4318/v1/traces
