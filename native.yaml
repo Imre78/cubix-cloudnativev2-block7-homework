@@ -1,4 +1,4 @@
-loggingMode: stdout-json
+loggingMode: stdout
 
 image:
   repository: quay.io/drsylent/cubix/block6v2/homework
@@ -17,6 +17,12 @@ ingress:
 env:
 - name: SERVER_TOMCAT_THREADS_MAX
   value: 50
+- name: MANAGEMENT_TRACING_ENABLED
+  value: "true"
+- name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+  value: "1.0"
+- name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+  value: "http://tempo.monitoring.svc.cluster.local:4318/v1/traces"  
 
 resources:
   limits:
