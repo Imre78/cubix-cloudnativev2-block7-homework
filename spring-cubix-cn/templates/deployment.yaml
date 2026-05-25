@@ -67,6 +67,15 @@ spec:
             - name: MANAGEMENT_SERVER_PORT
               value: "8081"
 
+            - name: MANAGEMENT_TRACING_ENABLED
+              value: "true"
+
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: "1.0"
+
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "http://tempo.monitoring.svc.cluster.local:4318/v1/traces"  
+
           ports:
             - name: http
               containerPort: 8080
